@@ -220,7 +220,7 @@ public class ProductController {
                 }
                 
                 // Set picture URL BEFORE saving
-                product.setPicture(imageUrl);
+                product.setPicture(normalizePicturePath(imageUrl));
                 System.out.println("Image uploaded successfully, URL set: " + imageUrl);
             } else {
                 System.out.println("No image to upload, picture will remain null");
@@ -318,7 +318,7 @@ public class ProductController {
                 System.out.println("Image URL: " + imageUrl);
                 
                 if (imageUrl != null) {
-                    product.setPicture(imageUrl);
+                    product.setPicture(normalizePicturePath(imageUrl));
                     System.out.println("Image uploaded successfully, URL set: " + imageUrl);
                 }
             } else {
@@ -438,7 +438,7 @@ public class ProductController {
                 System.out.println("Local file upload completed!");
                 System.out.println("Image URL: " + imageUrl);
                 if (imageUrl != null) {
-                    item.setPicture(imageUrl);
+                    item.setPicture(normalizePicturePath(imageUrl));
                     System.out.println("Image uploaded successfully, URL set: " + imageUrl);
                 }
             } else {
@@ -542,7 +542,7 @@ public class ProductController {
             System.out.println("Local file upload completed!");
             System.out.println("Image URL: " + imageUrl);
             if (imageUrl != null) {
-                itemToUpdate.setPicture(imageUrl);
+                itemToUpdate.setPicture(normalizePicturePath(imageUrl));
                 System.out.println("Image uploaded successfully, URL set: " + imageUrl);
             }
         } else {
@@ -575,5 +575,26 @@ public class ProductController {
     @RequestMapping(value = "/warehouse/{warehouseId}", method = RequestMethod.GET)
     public Collection<Product> getAllByWarehouse(@PathVariable(name = "warehouseId") Integer warehouseId) {
         return productService.findAllByWarehouseId(warehouseId);
+    }
+
+    private String normalizePicturePath(String imageUrl) {
+        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            return imageUrl;
+        }
+
+        String normalized = imageUrl.replace("\\", "/").trim();
+        if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+            return normalized;
+        }
+        if (normalized.contains("/uploads/")) {
+            return normalized.substring(normalized.indexOf("/uploads/"));
+        }
+        if (normalized.startsWith("uploads/")) {
+            return "/" + normalized;
+        }
+        if (normalized.startsWith("/")) {
+            return normalized;
+        }
+        return "/uploads/" + normalized;
     }
 }

@@ -131,11 +131,7 @@ export default function ProductAddForm({ submitHandler, defaultCategory, trigger
 
     function addProduct(productFormData) {
         globalContext.loader(true);
-        APIBase.post("api/v1/product", productFormData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        })
+        APIBase.post("api/v1/product", productFormData)
             .then(payload => {
                 globalContext.message.success("Product created successfully");
                 navigate(`/admin/product?id=${payload.data.id}`)

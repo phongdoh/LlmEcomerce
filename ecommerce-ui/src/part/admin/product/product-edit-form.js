@@ -168,8 +168,11 @@ export default function ProductEditForm({ product, submitHandler, trigger }) {
         APIBase.put(`api/v1/product/${productId}`, productData)
             .then(payload => {
                 globalContext.message.success("Product updated successfully");
-                // Reload page to show updated data
-                window.location.reload();
+                const updated = payload.data;
+                setImageRemoved(false);
+                setNewImage(null);
+                formik.setFieldValue("picture", updated?.picture || null);
+                formik.setFieldValue("image", null);
             })
             .catch((e) => {
                 const errorMessage = e.response?.data?.message || 
@@ -187,18 +190,15 @@ export default function ProductEditForm({ product, submitHandler, trigger }) {
     
     function updateProductWithImage(productId, formData) {
         globalContext.loader(true);
-        APIBase.put(`api/v1/product/${productId}`, formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        })
+        APIBase.put(`api/v1/product/${productId}`, formData)
             .then(payload => {
                 globalContext.message.success("Product updated successfully");
                 // Reset new image state
                 setNewImage(null);
                 setImageRemoved(false);
-                // Reload page to show updated data
-                window.location.reload();
+                const updated = payload.data;
+                formik.setFieldValue("picture", updated?.picture || null);
+                formik.setFieldValue("image", null);
             })
             .catch((e) => {
                 const errorMessage = e.response?.data?.message || 

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Local backend URL (Spring Boot runs on port 8085)
-export const LOCAL_URL = "http://localhost:8085";
+export const LOCAL_URL = process.env.REACT_APP_API_URL || "http://localhost:8085";
 // Public base URL used for OAuth redirects (Google, etc.)
 export const BaseURL = "https://gadgetsource.click";
 
@@ -15,13 +15,29 @@ export const BaseURL = "https://gadgetsource.click";
  */
 export function getImageUrl(imageUrl) {
     if (!imageUrl) return null;
-    if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
-        return imageUrl;
+    const normalizedBase = LOCAL_URL.replace(/\/+$/, "");
+    const raw = String(imageUrl).trim();
+    if (!raw) return null;
+    const normalizedPath = raw.replace(/\\/g, "/");
+
+    if (normalizedPath.startsWith("http://") || normalizedPath.startsWith("https://")) {
+        return normalizedPath;
     }
-    if (imageUrl.startsWith("/")) {
-        return `${LOCAL_URL}${imageUrl}`;
+
+    if (normalizedPath.includes("/uploads/")) {
+        const path = normalizedPath.substring(normalizedPath.indexOf("/uploads/"));
+        return `${normalizedBase}${path}`;
     }
-    return `${LOCAL_URL}/uploads/${imageUrl}`;
+
+    if (normalizedPath.startsWith("uploads/")) {
+        return `${normalizedBase}/${normalizedPath}`;
+    }
+
+    if (normalizedPath.startsWith("/")) {
+        return `${normalizedBase}${normalizedPath}`;
+    }
+
+    return `${normalizedBase}/uploads/${normalizedPath}`;
 }
 
 const APIBase = axios.create({
