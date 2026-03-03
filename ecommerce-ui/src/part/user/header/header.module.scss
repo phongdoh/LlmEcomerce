@@ -124,3 +124,33 @@
         height: 100%;
     }
 }
+
+.cartLink {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+        background-color: rgba(0, 0, 0, 0.06);
+    }
+}
+
+.cartIcon {
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+@media (max-width: 767px) {
+    .cartLink {
+        width: 36px;
+        height: 36px;
+    }
+
+    .cartIcon {
+        font-size: 1.3rem;
+    }
+}

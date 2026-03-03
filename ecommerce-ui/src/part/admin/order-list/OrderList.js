@@ -1,5 +1,5 @@
 import { Row, Col, Spin } from 'antd';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import APIBase from '../../../api/ApiBase';
 import UserOrder from '../user-order/UserOrder';
 function OrderList({ state, user }) {
@@ -9,57 +9,82 @@ function OrderList({ state, user }) {
         isEnd: false,
         loaded: false
     });
-    const [load, setLoad] = useState(false);
-    function scrollToLoad() {
+    const [load, setLoad] = useState(true);
+    const loadingRef = useRef(false);
+    const pageRef = useRef({ index: 0, isEnd: false, loaded: false });
+    const requestTokenRef = useRef(0);
+
+    const fetchOrder = useCallback((targetPage, reset = false) => {
+        if (!state) return;
+        if (loadingRef.current) return;
+        if (!reset && pageRef.current.isEnd) return;
+
+        loadingRef.current = true;
+        setLoad(true);
+        const requestToken = requestTokenRef.current;
+
+        const userIdParam = user?.id ? `&userId=${user.id}` : '';
+        APIBase.get(`/api/v1/order?status=${state}${userIdParam}&page=${targetPage}`)
+            .then(payload => {
+                if (requestToken !== requestTokenRef.current) return;
+
+                const incoming = payload?.data?.content || [];
+                const totalPages = payload?.data?.totalPages || 0;
+
+                setData(prev => {
+                    const merged = reset ? incoming : [...prev, ...incoming];
+                    const uniqueById = new Map();
+                    merged.forEach(order => {
+                        if (order?.id != null) uniqueById.set(order.id, order);
+                    });
+                    return Array.from(uniqueById.values());
+                });
+
+                const isEnd = totalPages === 0 || targetPage >= totalPages - 1;
+                const nextPage = isEnd ? targetPage : targetPage + 1;
+                const next = { index: nextPage, isEnd, loaded: false };
+                pageRef.current = next;
+                setPage(next);
+            })
+            .catch(console.log)
+            .finally(() => {
+                if (requestToken === requestTokenRef.current) {
+                    loadingRef.current = false;
+                    setLoad(false);
+                }
+            });
+    }, [state, user?.id]);
+
+    const scrollToLoad = useCallback(() => {
+        if (loadingRef.current || pageRef.current.isEnd) return;
+
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
         const windowHeight = window.innerHeight;
         const docHeight = document.documentElement.scrollHeight;
-        // Check if user has scrolled to the bottom of the page
-        if (scrollTop + windowHeight >= docHeight) {
-            setLoad(true);
-            fetchOrder(page);
+        if (scrollTop + windowHeight >= docHeight - 120) {
+            fetchOrder(pageRef.current.index);
         }
-    }
+    }, [fetchOrder]);
+
     useEffect(() => {
-        console.log(state)
-        setData([])
-        fetchOrder(page);
-        window.addEventListener("scroll", scrollToLoad);
+        if (!state) return;
+
+        requestTokenRef.current += 1;
+        loadingRef.current = false;
+        const resetPage = { index: 0, isEnd: false, loaded: false };
+        pageRef.current = resetPage;
+        setPage(resetPage);
+        setData([]);
+        setLoad(true);
+        window.scrollTo({ top: 0, behavior: 'auto' });
+        fetchOrder(0, true);
+
+        window.addEventListener('scroll', scrollToLoad, { passive: true });
         return () => {
-            window.removeEventListener("scroll", scrollToLoad);
-        }
-    }, [state])
-    function fetchOrder(page) {
-        if ((!page.isEnd) && (!page.loaded)) {
-            // Admin can optionally pass userId to filter specific user's orders
-            // If user is provided, include it, otherwise backend shows all orders
-            const userIdParam = user?.id ? `&userId=${user.id}` : '';
-            APIBase.get(`/api/v1/order?status=${state}${userIdParam}&page=${page.index}`)
-                .then(payload => {
-                    setData(data_ => {
-                        return [...data_, ...payload.data.content];
-                    })
-                    if (payload.data.totalPages - 1 == page.index) {
-                        setPage(page_ => {
-                            page_.isEnd = true;
-                            return page_;
-                        })
-                    } else {
-                        setPage(page_ => {
-                            page_.index = page_.index + 1;
-                            page_.loaded = false;
-                            return page_;
-                        })
-                    }
-                })
-                .catch(console.log)
-                .finally(() => {
-                    setLoad(false);
-                })
-        } else {
-            setLoad(false)
-        }
-    }
+            window.removeEventListener('scroll', scrollToLoad);
+        };
+    }, [state, fetchOrder, scrollToLoad]);
+
     return (<Row justify="center">
         <Col span={24} lg={{ span: 16 }} >
             {data.map((item) => <UserOrder key={item.id} data={item} />)}

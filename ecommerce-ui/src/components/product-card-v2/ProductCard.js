@@ -1,4 +1,4 @@
-import { Card, Col, Row, Typography, Button } from "antd";
+import { Card, Typography } from "antd";
 import style from './style.module.scss';
 import clsx from "clsx";
 import { Link } from "react-router-dom";
@@ -11,13 +11,6 @@ import { ShoppingCartOutlined } from "@ant-design/icons";
 const { Title, Text } = Typography;
 
 function ProductCard({ data, className, showBadge = false, ...restProps }) {
-    const handleAddToCart = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        // TODO: Implement add to cart functionality
-        console.log("Add to cart:", data.id);
-    };
-
     // showBadge is already destructured above, so it won't be in restProps
     // This ensures no non-DOM props are passed to the Card component
     return (
@@ -36,17 +29,9 @@ function ProductCard({ data, className, showBadge = false, ...restProps }) {
                         src={getImageUrl(data.picture) || PlaceHolder}
                         className={style.productImage}
                     />
-                    <div className={style.hoverOverlay}>
-                        <Button
-                            type="primary"
-                            ghost
-                            icon={<ShoppingCartOutlined />}
-                            className={style.addToCartButton}
-                            onClick={handleAddToCart}
-                        >
-                            Add to Cart
-                        </Button>
-                    </div>
+                    <span className={style.detailCartIcon} aria-label="View product detail">
+                        <ShoppingCartOutlined />
+                    </span>
                 </div>
                 <div className={style.productDetail}>
                     <Title level={5} className={style.productName} ellipsis={{ tooltip: data.name }}>

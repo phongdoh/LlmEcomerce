@@ -9,129 +9,81 @@ function OrderList({ state, user }) {
         isEnd: false,
         loaded: false
     });
-    const [load, setLoad] = useState(false);
-    const pollingIntervalRef = useRef(null);
-    
-    function scrollToLoad() {
+    const [load, setLoad] = useState(true);
+    const loadingRef = useRef(false);
+    const pageRef = useRef({ index: 0, isEnd: false, loaded: false });
+    const requestTokenRef = useRef(0);
+
+    const fetchOrder = useCallback((targetPage, reset = false) => {
+        if (!state) return;
+        if (loadingRef.current) return;
+        if (!reset && pageRef.current.isEnd) return;
+
+        loadingRef.current = true;
+        setLoad(true);
+        const requestToken = requestTokenRef.current;
+
+        APIBase.get(`/api/v1/order?status=${state}&page=${targetPage}`)
+            .then(payload => {
+                if (requestToken !== requestTokenRef.current) return;
+
+                const incoming = payload?.data?.content || [];
+                const totalPages = payload?.data?.totalPages || 0;
+
+                setData(prev => {
+                    const merged = reset ? incoming : [...prev, ...incoming];
+                    const uniqueById = new Map();
+                    merged.forEach(order => {
+                        if (order?.id != null) uniqueById.set(order.id, order);
+                    });
+                    return Array.from(uniqueById.values());
+                });
+
+                const isEnd = totalPages === 0 || targetPage >= totalPages - 1;
+                const nextPage = isEnd ? targetPage : targetPage + 1;
+                const next = { index: nextPage, isEnd, loaded: false };
+                pageRef.current = next;
+                setPage(next);
+            })
+            .catch(console.log)
+            .finally(() => {
+                if (requestToken === requestTokenRef.current) {
+                    loadingRef.current = false;
+                    setLoad(false);
+                }
+            });
+    }, [state]);
+
+    const scrollToLoad = useCallback(() => {
+        if (loadingRef.current || pageRef.current.isEnd) return;
+
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
         const windowHeight = window.innerHeight;
         const docHeight = document.documentElement.scrollHeight;
-        // Kiểm tra nếu người dùng đã cuộn tới cuối trang
-        if (scrollTop + windowHeight >= docHeight) {
-            setLoad(true);
-            fetchOrder(page);
+        if (scrollTop + windowHeight >= docHeight - 120) {
+            fetchOrder(pageRef.current.index);
         }
-    }
-    
-    // Stop polling
-    const stopPolling = useCallback(() => {
-        if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-        }
-    }, []);
-    
-    // Refresh order list (first page only, for status updates)
-    const refreshOrderList = useCallback(() => {
-        if (!state) return;
-        
-        // Only refresh first page to get status updates
-        // Backend infers userId from JWT SecurityContext
-        APIBase.get(`/api/v1/order?status=${state}&page=0`)
-            .then(payload => {
-                const newOrders = payload.data.content || [];
-                // Update existing orders with new data, or add new ones
-                setData(currentData => {
-                    const updatedData = [...newOrders];
-                    // Keep paginated data if we have more pages
-                    if (currentData.length > newOrders.length) {
-                        // Merge with existing data, but update matching orders
-                        const existingIds = new Set(newOrders.map(o => o.id));
-                        const additionalData = currentData.filter(o => !existingIds.has(o.id));
-                        return [...updatedData, ...additionalData];
-                    }
-                    return updatedData;
-                });
-            })
-            .catch(err => {
-                console.warn('Failed to refresh order list:', err);
-            });
-    }, [state]);
-    
-    // Start polling for order status updates
-    const startPolling = useCallback(() => {
-        stopPolling();
-        // Poll every 20 seconds to check for status updates
-        pollingIntervalRef.current = setInterval(() => {
-            refreshOrderList();
-        }, 20000);
-    }, [stopPolling, refreshOrderList]);
-    
-    // Handle window focus - refresh when user returns to tab
-    useEffect(() => {
-        const handleFocus = () => {
-            if (state) {
-                refreshOrderList();
-            }
-        };
-        
-        window.addEventListener('focus', handleFocus);
-        return () => {
-            window.removeEventListener('focus', handleFocus);
-        };
-    }, [state, refreshOrderList]);
-    
+    }, [fetchOrder]);
+
     useEffect(() => {
         if (!state) return;
-        
-        console.log(state);
+
+        requestTokenRef.current += 1;
+        loadingRef.current = false;
+        const resetPage = { index: 0, isEnd: false, loaded: false };
+        pageRef.current = resetPage;
+        setPage(resetPage);
         setData([]);
-        setPage({ index: 0, isEnd: false, loaded: false });
-        fetchOrder({ index: 0, isEnd: false, loaded: false });
-        
-        // Start polling after initial load
-        const timer = setTimeout(() => {
-            startPolling();
-        }, 1000);
-        
-        window.addEventListener("scroll", scrollToLoad);
+        setLoad(true);
+        window.scrollTo({ top: 0, behavior: 'auto' });
+        fetchOrder(0, true);
+
+        window.addEventListener('scroll', scrollToLoad, { passive: true });
         return () => {
-            window.removeEventListener("scroll", scrollToLoad);
-            stopPolling();
-            clearTimeout(timer);
+            window.removeEventListener('scroll', scrollToLoad);
         };
-    }, [state, startPolling, stopPolling]);
-    
-    function fetchOrder(page) {
-        if ((!page.isEnd) && (!page.loaded)) {
-            setPage(page_ => ({ ...page_, loaded: true }));
-            // Backend infers userId from JWT SecurityContext
-            APIBase.get(`/api/v1/order?status=${state}&page=${page.index}`)
-                .then(payload => {
-                    setData(data_ => {
-                        return [...data_, ...payload.data.content];
-                    })
-                    if (payload.data.totalPages - 1 == page.index) {
-                        setPage(page_ => {
-                            page_.isEnd = true;
-                            return page_;
-                        })
-                    } else {
-                        setPage(page_ => {
-                            page_.index = page_.index + 1;
-                            page_.loaded = false;
-                            return page_;
-                        })
-                    }
-                })
-                .catch(console.log)
-                .finally(() => {
-                    setLoad(false);
-                })
-        } else {
-            setLoad(false)
-        }
-    }
+    }, [state, fetchOrder, scrollToLoad]);
+
     return (<Row justify="center">
         <Col span={24} lg={{ span: 16 }} >
             {data.map((item) => <UserOrder key={item.id} data={item} />)}

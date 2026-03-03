@@ -75,37 +75,27 @@
     z-index: 2;
 }
 
-.hoverOverlay {
+.detailCartIcon {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
+    right: 10px;
+    bottom: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 1;
+    background-color: rgba(255, 255, 255, 0.92);
+    color: var(--text-dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-size: 0.95rem;
+    z-index: 2;
+    transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
-.productCard:hover .hoverOverlay {
-    opacity: 1;
-}
-
-.addToCartButton {
-    transform: translateY(10px);
-    transition: transform 0.3s ease;
-    font-weight: 600;
-    height: 40px;
-    padding: 0 24px;
-    border-radius: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.productCard:hover .addToCartButton {
-    transform: translateY(0);
+.productCard:hover .detailCartIcon {
+    transform: scale(1.05);
+    background-color: #fff;
 }
 
 .productDetail {

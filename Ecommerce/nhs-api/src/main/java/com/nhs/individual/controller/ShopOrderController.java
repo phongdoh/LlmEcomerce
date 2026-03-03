@@ -113,9 +113,14 @@ public class ShopOrderController {
         if(address!=null) shopOrderSpecifications.add(IShopOrderSpecification.byAddress(address));
         if(from!=null&&to!=null) shopOrderSpecifications.add(IShopOrderSpecification.fromToDate(
             Timestamp.from(from.toInstant()),Timestamp.from(to.toInstant())));
-        
-        String[] arr=new String[sortBy.size()];
-        Sort sorts=Sort.by(sort,sortBy.toArray(sortBy.toArray(arr)));
+
+        List<String> stableSortBy = new ArrayList<>(sortBy);
+        if (stableSortBy.stream().noneMatch("id"::equalsIgnoreCase)) {
+            stableSortBy.add("id");
+        }
+
+        String[] arr=new String[stableSortBy.size()];
+        Sort sorts=Sort.by(sort,stableSortBy.toArray(arr));
         Pageable pageable=PageRequest.of(page,size,sorts);
         return shopOrderService.findAll(shopOrderSpecifications,pageable);
     }

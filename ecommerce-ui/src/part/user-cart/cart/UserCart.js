@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import OrderItem from "../../../components/order-item/OrderItem";
 import { Row, Col, Button, Card, Empty, Space } from 'antd';
 import style from './style.module.scss';
@@ -6,7 +6,6 @@ import APIBase from "../../../api/ApiBase";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../../../secure/useAuth";
 import { Spin } from "antd";
-import { debounce, throttle } from "lodash";
 import { Currency } from "../../../components";
 import { ShoppingCartOutlined, ShopOutlined } from '@ant-design/icons';
 function UserCart() {
@@ -19,23 +18,31 @@ function UserCart() {
     const [data, setData] = useState([]);
     const [selectedItems, setSelectedItem] = useState([]);
     const [load, setLoad] = useState(false);
+    const loadingRef = useRef(false);
+    const pageRef = useRef(page);
+
+    useEffect(() => {
+        pageRef.current = page;
+    }, [page]);
+
     function scrollToLoad() {
+        if (loadingRef.current || pageRef.current.isEnd || !user?.id) return;
+
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
         const windowHeight = window.innerHeight;
         const docHeight = document.documentElement.scrollHeight;
         if (scrollTop + windowHeight >= docHeight - 100) {
-            setLoad(true);
-            fetch()
+            fetch(pageRef.current.index);
         }
     }
 
     useEffect(() => {
-        if (user) {
-            // Reset state when user changes
+        if (user?.id) {
             setData([]);
             setPage({ index: 0, isEnd: false });
             setSelectedItem([]);
-            fetch();
+            pageRef.current = { index: 0, isEnd: false };
+            fetch(0, true);
         }
         const onScroll = scrollToLoad;
         window.addEventListener("scroll", onScroll);
@@ -43,30 +50,44 @@ function UserCart() {
             window.removeEventListener("scroll", onScroll);
         }
     }, [user]);
-    function fetch() {
-        console.log(page.isEnd)
-        if (!page.isEnd) {
-            APIBase.get(`api/v1/cart?userId=${user.id}&page=${page.index}`)
+
+    useEffect(() => {
+        setSelectedItem(selected => selected.filter(selectedItem => data.some(item => item.id === selectedItem.id)));
+    }, [data]);
+
+    function fetch(targetPage, reset = false) {
+        if (!user?.id) return;
+        if (loadingRef.current) return;
+        if (!reset && pageRef.current.isEnd) return;
+
+        loadingRef.current = true;
+        setLoad(true);
+
+        APIBase.get(`api/v1/cart?userId=${user.id}&page=${targetPage}`)
                 .then(payload => {
-                    setData(data_ => [...data_, ...payload.data.content]);
-                    if (payload.data.totalPages - 1 == page.index) {
-                        setPage(page_ => {
-                            page_.isEnd = true;
-                            return page_;
-                        })
-                    }
-                    else {
-                        setPage(page_ => {
-                            page_.index = page_.index + 1;
-                            return page_;
-                        })
-                    }
+                    const incoming = payload?.data?.content || [];
+                    const totalPages = payload?.data?.totalPages || 0;
+
+                    setData(prev => {
+                        const merged = reset ? incoming : [...prev, ...incoming];
+                        const uniqueById = new Map();
+                        merged.forEach(item => {
+                            if (item?.id != null) uniqueById.set(item.id, item);
+                        });
+                        return Array.from(uniqueById.values());
+                    });
+
+                    const isEnd = totalPages === 0 || targetPage >= totalPages - 1;
+                    const nextPage = isEnd ? targetPage : targetPage + 1;
+                    const next = { index: nextPage, isEnd };
+                    pageRef.current = next;
+                    setPage(next);
                 })
                 .catch(console.error)
                 .finally(() => {
-                    setLoad(false)
-                })
-        }
+                    loadingRef.current = false;
+                    setLoad(false);
+                });
     }
 
     function onCheckItem(e) {
@@ -168,22 +189,22 @@ function UserCart() {
         );
     }
 
-    return (<Row gutter={[8, 8]} md={{ gutter: [16, 16] }} >
-        <Col span={24} md={{ span: 12 }} lg={{ span: 14 }}>
+    return (<Row gutter={[12, 12]} className={style.cartLayout}>
+        <Col span={24} md={{ span: 14 }} lg={{ span: 15 }}>
             <div title="Your Item">
-                {data.map((item, key) => <Row style={{ padding: "0px 8px" }} gutter={[8, 8]} key={key} align="middle">
-                    <Col span={1} ><input type='checkbox' checked={selectedItems.some(selectedItem_ => selectedItem_.id == item.id)} value={item.id} onChange={onCheckItem} /></Col>
-                    <Col span={22}><OrderItem onChange={(payload) => handleItemChange(item.id, payload)} data={item} /></Col>
-                    <Col span={1} className={style.deleteBtn} onClick={() => handleDelete(item.id)}><i className="fi fi-br-cross-small"></i></Col>
+                {data.map((item) => <Row className={style.cartRow} gutter={[8, 8]} key={item.id} align="middle">
+                    <Col xs={2} sm={2} md={2} lg={1}><input type='checkbox' checked={selectedItems.some(selectedItem_ => selectedItem_.id === item.id)} value={item.id} onChange={onCheckItem} /></Col>
+                    <Col xs={20} sm={20} md={20} lg={22}><OrderItem onChange={(payload) => handleItemChange(item.id, payload)} data={item} /></Col>
+                    <Col xs={2} sm={2} md={2} lg={1} className={style.deleteBtn} onClick={() => handleDelete(item.id)}><i className="fi fi-br-cross-small"></i></Col>
                 </Row>)}
             </div>
         </Col>
         {(load && !page.isEnd) && <Col span={24}>
-            <Row><Spin /></Row>
+            <Row justify="center"><Spin /></Row>
         </Col>}
-        <Col span={24} md={{ span: 12 }} lg={{ span: 10 }}>
-            <Card title="Total">
-                <h4><Currency value={selectedItems.reduce((pre, item) => {
+        <Col span={24} md={{ span: 10 }} lg={{ span: 9 }}>
+            <Card title="Total" className={style.summaryCard}>
+                <h4 className={style.summaryValue}><Currency value={selectedItems.reduce((pre, item) => {
                     return pre + item.qty * item.productItem.price;
                 }, 0)} /></h4>
                 <Button 

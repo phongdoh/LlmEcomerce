@@ -2,8 +2,40 @@
     font-size: 1.3rem;
     opacity: 0.6;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
 
     &:hover {
         opacity: 1;
+    }
+}
+
+.cartLayout {
+    width: 100%;
+}
+
+.cartRow {
+    padding: 8px 0;
+}
+
+.summaryCard {
+    position: sticky;
+    top: 84px;
+}
+
+.summaryValue {
+    margin: 0 0 12px;
+}
+
+@media (max-width: 767px) {
+    .cartRow {
+        padding: 6px 0;
+    }
+
+    .summaryCard {
+        position: static;
+        top: auto;
     }
 }

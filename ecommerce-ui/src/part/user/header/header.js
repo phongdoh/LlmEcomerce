@@ -34,8 +34,8 @@ function Header({ searchTrigger }) {
             </Col>
             <Col order={3} className={style.blank} flex={device === "MOBILE" ? 0 : 1} />
             <Col order={4} className={clsx(style.item, style.right)}>
-                <Link to={"/cart"} className={clsx(style.link)}>
-                    <i className="fi fi-rr-shopping-bag"></i>
+                <Link to={"/cart"} className={clsx(style.link, style.cartLink)}>
+                    <i className={clsx("fi fi-rr-shopping-bag", style.cartIcon)}></i>
                 </Link>
             </Col>
             <Tippy
