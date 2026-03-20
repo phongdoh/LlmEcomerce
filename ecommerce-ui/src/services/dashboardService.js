@@ -11,13 +11,17 @@ import APIBase from "../api/ApiBase";
 export async function getDashboardStats() {
     const fallback = {
         totalRevenue: 0,
+        revenueGrowthRate: 0,
         revenueGrowth: 0,
         ordersToday: 0,
         ordersGrowth: 0,
         totalProducts: 0,
         productsGrowth: 0,
         totalUsers: 0,
+        usersGrowthRate: 0,
         usersGrowth: 0,
+        lowStockAlerts: [],
+        activityFeed: [],
     };
     try {
         const { data } = await APIBase.get("/admin/dashboard/stats");

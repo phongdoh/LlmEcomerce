@@ -9,7 +9,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.validator.constraints.Length;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.Instant;
 import java.sql.Date;
 import java.util.Collection;
 
@@ -49,6 +51,10 @@ public class User {
 
     @Column(name = "picture")
     protected String picture;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    protected Instant createdAt;
 
     @OneToMany(mappedBy = "user",fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JsonIgnore

@@ -8,8 +8,6 @@ const NAV_ITEMS = [
     { key: "/admin/order-manage", icon: "fi fi-rr-to-do", label: "Orders" },
     { key: "/admin/warehouse", icon: "fi fi-rr-warehouse-alt", label: "Warehouses" },
     { key: "/admin/user/manage", icon: "fi fi-rr-user-check", label: "Users" },
-    { key: "/admin/analytics", icon: "fi fi-rr-chart-line-up", label: "Analytics" },
-    { key: "/admin/settings", icon: "fi fi-rr-settings", label: "Settings" },
 ];
 
 function NavItem({ item, collapsed, isActive }) {

@@ -1,0 +1,6 @@
+ALTER TABLE `user`
+    ADD COLUMN IF NOT EXISTS `created_at` datetime(6) NULL DEFAULT CURRENT_TIMESTAMP(6);
+
+UPDATE `user`
+SET `created_at` = CURRENT_TIMESTAMP(6)
+WHERE `created_at` IS NULL;

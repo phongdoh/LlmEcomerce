@@ -38,23 +38,22 @@ function LowStockAlert({ data = [] }) {
 
             <ul className="space-y-4">
                 {list.map((item) => (
-                    <li key={item.id}>
+                    <li key={`${item?.productName ?? "unknown"}-${item?.currentStock ?? 0}`}>
                         <div className="flex items-start justify-between gap-2 mb-1.5">
                             <div className="min-w-0 flex-1">
-                                <p className="text-xs font-semibold text-slate-700 font-body truncate">{item?.name ?? "Unknown Product"}</p>
-                                <p className="text-[10px] text-slate-400 font-body">{item?.sku ?? "-"} · {item?.category ?? "-"}</p>
+                                <p className="text-xs font-semibold text-slate-700 font-body truncate">{item?.productName ?? "Unknown Product"}</p>
                             </div>
                             <span className={`flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-lg font-body ${
-                                item?.stock < (item?.threshold ?? 1) * 0.5
+                                (item?.currentStock ?? 0) < 5
                                     ? "bg-red-50 text-red-600"
                                     : "bg-amber-50 text-amber-600"
                             }`}>
-                                {item?.stock < (item?.threshold ?? 1) * 0.5 ? "Critical" : "Warning"}
+                                {(item?.currentStock ?? 0) < 5 ? "Critical" : "Warning"}
                             </span>
                         </div>
-                        <StockBar stock={item?.stock ?? 0} threshold={item?.threshold ?? 10} />
+                        <StockBar stock={item?.currentStock ?? 0} threshold={10} />
                         <p className="text-[10px] text-slate-400 font-body mt-0.5 text-right">
-                            Threshold: {item?.threshold ?? 10}
+                            Threshold: 10
                         </p>
                     </li>
                 ))}

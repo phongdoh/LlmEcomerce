@@ -17,7 +17,6 @@ import {
     getTopProducts,
     getTopCustomers,
     getRecentOrders,
-    getLowStockProducts,
 } from "../../../services/dashboardService";
 
 // ── Loading skeleton card ────────────────────────────────────────────────────
@@ -81,6 +80,7 @@ function AdminDashboardPage() {
     const [topCustomers, setTopCustomers] = useState([]);
     const [recentOrders, setRecentOrders] = useState([]);
     const [lowStock, setLowStock] = useState([]);
+    const [activityFeed, setActivityFeed] = useState([]);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -98,7 +98,6 @@ function AdminDashboardPage() {
                 topProductsData,
                 topCustomersData,
                 recentOrdersData,
-                lowStockData,
             ] = await Promise.all([
                 getDashboardStats(),
                 getSalesChart(),
@@ -107,7 +106,6 @@ function AdminDashboardPage() {
                 getTopProducts({ limit: 5 }),
                 getTopCustomers({ limit: 5 }),
                 getRecentOrders({ limit: 10 }),
-                getLowStockProducts(),
             ]);
 
             setKpi(kpiData);
@@ -117,7 +115,8 @@ function AdminDashboardPage() {
             setTopProducts(topProductsData);
             setTopCustomers(topCustomersData);
             setRecentOrders(recentOrdersData);
-            setLowStock(lowStockData);
+            setLowStock(Array.isArray(kpiData?.lowStockAlerts) ? kpiData.lowStockAlerts : []);
+            setActivityFeed(Array.isArray(kpiData?.activityFeed) ? kpiData.activityFeed : []);
         } catch (err) {
             console.error("[Dashboard] Failed to load dashboard data:", err);
             setError(
@@ -229,8 +228,10 @@ function AdminDashboardPage() {
                             }
                         </div>
                         <div className="lg:col-span-2">
-                            {/* Activity feed: static or from a separate API */}
-                            <ActivityFeed data={[]} />
+                            {loading
+                                ? <SkeletonChart height="h-64" />
+                                : <ActivityFeed data={activityFeed} />
+                            }
                         </div>
                     </div>
 
