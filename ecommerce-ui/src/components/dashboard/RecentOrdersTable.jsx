@@ -3,13 +3,13 @@ import { Link } from "react-router-dom";
 
 const STATUS_CONFIG = {
     delivered: { label: "Delivered", classes: "bg-emerald-50 text-emerald-700" },
-    shipped: { label: "Shipped", classes: "bg-blue-50 text-blue-700" },
-    processing: { label: "Processing", classes: "bg-amber-50 text-amber-700" },
+    preparing: { label: "Preparing", classes: "bg-amber-50 text-amber-700" },
     cancelled: { label: "Cancelled", classes: "bg-red-50 text-red-600" },
 };
 
 function StatusBadge({ status }) {
-    const cfg = STATUS_CONFIG[status] || { label: status, classes: "bg-slate-100 text-slate-600" };
+    const key = String(status ?? "preparing").toLowerCase();
+    const cfg = STATUS_CONFIG[key] || { label: key, classes: "bg-slate-100 text-slate-600" };
     return (
         <span className={`inline-flex items-center text-[10px] font-semibold font-body px-2 py-0.5 rounded-lg uppercase tracking-wide ${cfg.classes}`}>
             {cfg.label}
@@ -26,7 +26,7 @@ function RecentOrdersTable({ data = [] }) {
                     <h3 className="text-sm font-semibold font-heading text-slate-800">Recent Orders</h3>
                     <p className="text-xs text-slate-400 font-body mt-0.5">Latest {list.length} transactions</p>
                 </div>
-                <Link to="/admin/order-manage" className="text-xs text-brand-600 hover:text-brand-700 font-medium font-body transition-colors duration-150">
+                <Link to="/admin/orders" className="text-xs text-brand-600 hover:text-brand-700 font-medium font-body transition-colors duration-150">
                     View all →
                 </Link>
             </div>
@@ -44,25 +44,25 @@ function RecentOrdersTable({ data = [] }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {list.map((order, i) => (
+                        {list.map((order) => (
                             <tr
-                                key={order.id}
+                                key={order?.orderId}
                                 className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors duration-150 cursor-pointer"
                             >
                                 <td className="px-5 py-3.5">
-                                    <span className="font-mono font-semibold text-brand-600 text-xs">{order?.id ?? "N/A"}</span>
+                                    <span className="font-mono font-semibold text-brand-600 text-xs">#{order?.orderId ?? "N/A"}</span>
                                 </td>
                                 <td className="px-5 py-3.5">
-                                    <span className="text-slate-700 font-body font-medium">{order?.customer ?? "Unknown"}</span>
+                                    <span className="text-slate-700 font-body font-medium">{order?.customerName ?? "Unknown"}</span>
                                 </td>
                                 <td className="px-5 py-3.5 hidden md:table-cell">
-                                    <span className="text-slate-500 font-body truncate max-w-[160px] block">{order?.product ?? "Unknown Product"}</span>
+                                    <span className="text-slate-500 font-body truncate max-w-[160px] block">{order?.productName ?? "Unknown Product"}</span>
                                 </td>
                                 <td className="px-5 py-3.5">
-                                    <span className="font-heading font-bold text-slate-700">${(order?.amount ?? 0).toLocaleString()}</span>
+                                    <span className="font-heading font-bold text-slate-700">{order?.amountFormatted ?? `${Number(order?.amount ?? 0).toLocaleString("vi-VN")} ₫`}</span>
                                 </td>
                                 <td className="px-5 py-3.5">
-                                    <StatusBadge status={order?.status ?? "processing"} />
+                                    <StatusBadge status={order?.status ?? "preparing"} />
                                 </td>
                                 <td className="px-5 py-3.5 hidden lg:table-cell">
                                     <span className="text-slate-400 font-body">{order?.date ?? "-"}</span>

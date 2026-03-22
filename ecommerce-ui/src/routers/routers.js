@@ -50,6 +50,7 @@ export const userRouter = [
 export const adminRouter = [
     // /admin route must be FIRST in adminRouter to ensure it's matched before other admin routes
     { path: "/admin", component: AdminDashboardPage, layout: null },
+    { path: "/admin/orders", component: AdminOrderManagePage, layout: null },
     { path: "/admin/order-manage", component: AdminOrderManagePage, layout: null },
     {
         path: "/admin/order",

@@ -23,6 +23,7 @@ function Avatar({ name }) {
 
 function TopCustomers({ data = [] }) {
     const list = Array.isArray(data) ? data : [];
+    const formatVnd = (value) => `${Number(value ?? 0).toLocaleString("vi-VN")} ₫`;
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
             <div className="flex items-center justify-between mb-4">
@@ -35,26 +36,28 @@ function TopCustomers({ data = [] }) {
                 </Link>
             </div>
 
-            <ul className="space-y-3">
-                {list.map((u, i) => (
-                    <li key={u.id} className="flex items-center gap-3">
-                        <span className={`flex-shrink-0 w-6 text-xs font-bold font-heading text-right ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-slate-300"}`}>
-                            #{i + 1}
-                        </span>
-                        <Avatar name={u?.name} />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-slate-700 truncate font-body">{u?.name ?? "Unknown User"}</p>
-                            <p className="text-[10px] text-slate-400 font-body truncate">{u.email}</p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                            <p className="text-xs font-bold font-heading text-slate-700">
-                                ${((u?.totalSpend ?? 0) / 1000).toFixed(1)}k
-                            </p>
-                            <p className="text-[10px] text-slate-400 font-body">{u?.orders ?? 0} orders</p>
-                        </div>
-                    </li>
-                ))}
-            </ul>
+            {list.length === 0 ? (
+                <p className="text-xs text-slate-400 font-body">No data yet</p>
+            ) : (
+                <ul className="space-y-3">
+                    {list.map((u, i) => (
+                        <li key={u?.userId ?? i} className="flex items-center gap-3">
+                            <span className={`flex-shrink-0 w-6 text-xs font-bold font-heading text-right ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-slate-300"}`}>
+                                #{i + 1}
+                            </span>
+                            <Avatar name={u?.name} />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-slate-700 truncate font-body">{u?.name ?? "Unknown User"}</p>
+                                <p className="text-[10px] text-slate-400 font-body truncate">Top spender</p>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                                <p className="text-xs font-bold font-heading text-slate-700">{formatVnd(u?.totalSpend)}</p>
+                                <p className="text-[10px] text-slate-400 font-body">{Number(u?.orderCount ?? 0).toLocaleString("vi-VN")} orders</p>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            )}
         </div>
     );
 }

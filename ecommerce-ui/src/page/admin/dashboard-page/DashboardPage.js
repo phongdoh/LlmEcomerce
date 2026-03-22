@@ -61,17 +61,36 @@ function ErrorBanner({ message, onRetry }) {
 
 // ── Main Dashboard Page ───────────────────────────────────────────────────────
 function AdminDashboardPage() {
+    const CATEGORY_COLORS = ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe", "#1d4ed8"];
+
+    const toCategoryChartData = useCallback((raw = []) => {
+        const list = Array.isArray(raw) ? raw : [];
+        const total = list.reduce((sum, item) => sum + Number(item?.revenue ?? 0), 0);
+        return list.map((item, index) => {
+            const amount = Number(item?.revenue ?? 0);
+            const value = total > 0 ? Number(((amount / total) * 100).toFixed(2)) : 0;
+            return {
+                name: item?.categoryName ?? "Unknown",
+                amount,
+                value,
+                color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+            };
+        });
+    }, []);
 
     // ── State ──
     const [kpi, setKpi] = useState({
         totalRevenue: 0,
-        revenueGrowth: 0,
+        revenueGrowthRate: 0,
         ordersToday: 0,
-        ordersGrowth: 0,
+        ordersTodayGrowth: 0,
         totalProducts: 0,
         productsGrowth: 0,
         totalUsers: 0,
-        usersGrowth: 0,
+        usersGrowthRate: 0,
+        topProducts: [],
+        topCustomers: [],
+        categoryRevenue: [],
     });
     const [sales, setSales] = useState([]);
     const [userGrowth, setUserGrowth] = useState([]);
@@ -111,9 +130,21 @@ function AdminDashboardPage() {
             setKpi(kpiData);
             setSales(salesData);
             setUserGrowth(userGrowthData);
-            setRevenueByCategory(revByCatData);
-            setTopProducts(topProductsData);
-            setTopCustomers(topCustomersData);
+            setRevenueByCategory(
+                (Array.isArray(revByCatData) && revByCatData.length > 0)
+                    ? revByCatData
+                    : toCategoryChartData(kpiData?.categoryRevenue)
+            );
+            setTopProducts(
+                (Array.isArray(topProductsData) && topProductsData.length > 0)
+                    ? topProductsData
+                    : (Array.isArray(kpiData?.topProducts) ? kpiData.topProducts : [])
+            );
+            setTopCustomers(
+                (Array.isArray(topCustomersData) && topCustomersData.length > 0)
+                    ? topCustomersData
+                    : (Array.isArray(kpiData?.topCustomers) ? kpiData.topCustomers : [])
+            );
             setRecentOrders(recentOrdersData);
             setLowStock(Array.isArray(kpiData?.lowStockAlerts) ? kpiData.lowStockAlerts : []);
             setActivityFeed(Array.isArray(kpiData?.activityFeed) ? kpiData.activityFeed : []);
@@ -127,7 +158,7 @@ function AdminDashboardPage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [toCategoryChartData]);
 
     useEffect(() => {
         fetchAll();

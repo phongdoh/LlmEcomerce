@@ -6,9 +6,11 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 
@@ -37,8 +39,17 @@ public class ShopOrder implements Serializable {
     private Address address;
 
 
-    @Column(name = "order_date", columnDefinition = "DATETIME")
+    @CreationTimestamp
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "order_date", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
     private Date orderDate;
+
+    @PrePersist
+    protected void onCreate() {
+        if (orderDate == null) {
+            orderDate = Date.from(Instant.now());
+        }
+    }
 
     @Column(name = "total",scale = 2, precision = 18)
     @Min(value = 1,message = "Total value can not be negative or equal to 0")

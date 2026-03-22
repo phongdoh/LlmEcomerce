@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -44,10 +45,27 @@ public interface UserRepository extends JpaRepository<User,Integer> {
                                    u.lastname AS lastName
                         FROM `user` u
                         WHERE u.created_at IS NOT NULL
+                          AND u.created_at >= '2000-01-01'
                         ORDER BY u.created_at DESC, u.id DESC
                         LIMIT :limit
                         """, nativeQuery = true)
         java.util.List<RecentUserActivityProjection> findRecentUserActivities(@Param("limit") Integer limit);
+
+    @Query(value = """
+            SELECT u.id AS userId,
+                   u.firstname AS firstName,
+                   u.lastname AS lastName,
+                   u.email AS email
+            FROM `user` u
+            WHERE LOWER(CONCAT(COALESCE(u.firstname, ''), ' ', COALESCE(u.lastname, ''))) LIKE LOWER(CONCAT('%', :query, '%'))
+               OR LOWER(COALESCE(u.email, '')) LIKE LOWER(CONCAT('%', :query, '%'))
+            ORDER BY u.id DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<GlobalSearchUserProjection> searchUsersForAdmin(
+            @Param("query") String query,
+            @Param("limit") Integer limit
+    );
 
         interface RecentUserActivityProjection {
                 Integer getUserId();
@@ -57,5 +75,15 @@ public interface UserRepository extends JpaRepository<User,Integer> {
                 String getFirstName();
 
                 String getLastName();
+        }
+
+        interface GlobalSearchUserProjection {
+                Integer getUserId();
+
+                String getFirstName();
+
+                String getLastName();
+
+                String getEmail();
         }
 }

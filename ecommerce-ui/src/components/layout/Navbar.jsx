@@ -1,14 +1,89 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { searchAdminGlobal } from "../../services/adminSearchService";
 
 function Navbar({ collapsed }) {
     const navigate = useNavigate();
     const [searchVal, setSearchVal] = useState("");
+    const [debouncedQuery, setDebouncedQuery] = useState("");
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [searchResults, setSearchResults] = useState({ products: [], orders: [], users: [] });
     const [notifOpen, setNotifOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const searchContainerRef = useRef(null);
+    const searchRequestRef = useRef(0);
     const notifications = [];
     const unread = notifications.filter((n) => !n.read).length;
     const hasNotifications = notifications.length > 0;
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            setDebouncedQuery(searchVal.trim());
+        }, 350);
+
+        return () => window.clearTimeout(timer);
+    }, [searchVal]);
+
+    useEffect(() => {
+        const q = debouncedQuery;
+        if (!q) {
+            setSearchLoading(false);
+            setSearchResults({ products: [], orders: [], users: [] });
+            setSearchOpen(false);
+            return;
+        }
+
+        const requestId = searchRequestRef.current + 1;
+        searchRequestRef.current = requestId;
+        setSearchLoading(true);
+
+        searchAdminGlobal({ query: q, limit: 6 })
+            .then((result) => {
+                if (searchRequestRef.current !== requestId) {
+                    return;
+                }
+                setSearchResults(result);
+                setSearchOpen(true);
+            })
+            .finally(() => {
+                if (searchRequestRef.current === requestId) {
+                    setSearchLoading(false);
+                }
+            });
+    }, [debouncedQuery]);
+
+    useEffect(() => {
+        function handleDocumentClick(event) {
+            if (!searchContainerRef.current) {
+                return;
+            }
+            if (!searchContainerRef.current.contains(event.target)) {
+                setSearchOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleDocumentClick);
+        return () => document.removeEventListener("mousedown", handleDocumentClick);
+    }, []);
+
+    const totalSearchResults = useMemo(() => {
+        return (searchResults.products?.length || 0)
+            + (searchResults.orders?.length || 0)
+            + (searchResults.users?.length || 0);
+    }, [searchResults]);
+
+    const clearSearch = () => {
+        setSearchVal("");
+        setDebouncedQuery("");
+        setSearchResults({ products: [], orders: [], users: [] });
+        setSearchOpen(false);
+    };
+
+    const navigateToResult = (path) => {
+        clearSearch();
+        navigate(path);
+    };
 
     const handleLogout = () => {
         window.localStorage.removeItem("AUTH_TOKEN");
@@ -24,13 +99,18 @@ function Navbar({ collapsed }) {
             className="sticky top-0 z-30 h-16 w-full bg-white/80 backdrop-blur-md border-b border-slate-200/80 flex items-center px-6 gap-6 shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
         >
             {/* Search */}
-            <div className="flex-1 max-w-md relative group">
+            <div ref={searchContainerRef} className="flex-1 max-w-md relative group">
                 <i className="fi fi-rr-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[13px] leading-none group-focus-within:text-brand-600 transition-colors" />
                 <input
                     type="text"
                     placeholder="Search products, orders, users..."
                     value={searchVal}
                     onChange={(e) => setSearchVal(e.target.value)}
+                    onFocus={() => {
+                        if (debouncedQuery) {
+                            setSearchOpen(true);
+                        }
+                    }}
                     className="w-full text-sm bg-slate-50/50 hover:bg-white border border-slate-200/80 hover:border-slate-300 rounded-xl pl-9 pr-12 py-2 text-slate-900 font-medium placeholder-[rgba(15_23_42_/_0.4)] focus:outline-none focus:background-white focus:ring-[3px] focus:ring-brand-500/10 focus:border-brand-500 transition-all duration-300 font-body placeholder:font-body shadow-[0_1px_2px_rgba(0,0,0,0.01)]"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center pointer-events-none opacity-70 group-focus-within:opacity-0 transition-opacity duration-200">
@@ -38,6 +118,74 @@ function Navbar({ collapsed }) {
                         ⌘K
                     </kbd>
                 </div>
+
+                {searchOpen && debouncedQuery && (
+                    <div className="absolute left-0 right-0 top-[calc(100%+8px)] bg-white border border-slate-200 rounded-2xl shadow-[0_12px_36px_rgba(15,23,42,0.12)] z-50 overflow-hidden">
+                        <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+                            <span className="text-xs font-semibold tracking-wide uppercase text-slate-500">Search Results</span>
+                            <span className="text-xs text-slate-400">{searchLoading ? "Searching..." : `${totalSearchResults} found`}</span>
+                        </div>
+
+                        <div className="max-h-[420px] overflow-y-auto py-2">
+                            {!searchLoading && totalSearchResults === 0 && (
+                                <div className="px-4 py-6 text-center text-sm text-slate-500">
+                                    No results for "{debouncedQuery}".
+                                </div>
+                            )}
+
+                            {searchResults.products?.length > 0 && (
+                                <div className="pb-1">
+                                    <p className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Products</p>
+                                    {searchResults.products.map((item) => (
+                                        <button
+                                            key={`product-${item.id}`}
+                                            type="button"
+                                            onClick={() => navigateToResult(`/admin/product?id=${item.id}`)}
+                                            className="w-full text-left px-4 py-2.5 hover:bg-blue-50/60 transition-colors"
+                                        >
+                                            <p className="text-sm font-semibold text-slate-800 truncate">{item.name}</p>
+                                            <p className="text-xs text-slate-500 truncate">SKU: {item.sku || "-"}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {searchResults.orders?.length > 0 && (
+                                <div className="pb-1 border-t border-slate-100">
+                                    <p className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Orders</p>
+                                    {searchResults.orders.map((item) => (
+                                        <button
+                                            key={`order-${item.id}`}
+                                            type="button"
+                                            onClick={() => navigateToResult(`/admin/order?id=${item.id}`)}
+                                            className="w-full text-left px-4 py-2.5 hover:bg-blue-50/60 transition-colors"
+                                        >
+                                            <p className="text-sm font-semibold text-slate-800 truncate">Order #{item.id}</p>
+                                            <p className="text-xs text-slate-500 truncate">{item.customerName} • {item.amountFormatted || "0 ₫"} • {item.date || "-"}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {searchResults.users?.length > 0 && (
+                                <div className="pb-1 border-t border-slate-100">
+                                    <p className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Users</p>
+                                    {searchResults.users.map((item) => (
+                                        <button
+                                            key={`user-${item.id}`}
+                                            type="button"
+                                            onClick={() => navigateToResult(`/admin/user?id=${item.id}`)}
+                                            className="w-full text-left px-4 py-2.5 hover:bg-blue-50/60 transition-colors"
+                                        >
+                                            <p className="text-sm font-semibold text-slate-800 truncate">{item.name || `User #${item.id}`}</p>
+                                            <p className="text-xs text-slate-500 truncate">{item.email || "No email"}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="flex items-center gap-1.5 ml-auto">

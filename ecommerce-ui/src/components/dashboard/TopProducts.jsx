@@ -15,42 +15,32 @@ function TopProducts({ data = [] }) {
                 </Link>
             </div>
 
-            <ul className="space-y-3">
-                {list.map((item, i) => (
-                    <li key={item.id} className="flex items-center gap-3 group">
-                        {/* Rank */}
-                        <span className={`flex-shrink-0 w-6 text-xs font-bold font-heading text-right ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-slate-300"}`}>
-                            #{i + 1}
-                        </span>
+            {list.length === 0 ? (
+                <p className="text-xs text-slate-400 font-body">No data yet</p>
+            ) : (
+                <ul className="space-y-3">
+                    {list.map((item, i) => (
+                        <li key={item?.productId ?? i} className="flex items-center gap-3 group">
+                            <span className={`flex-shrink-0 w-6 text-xs font-bold font-heading text-right ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-slate-300"}`}>
+                                #{i + 1}
+                            </span>
 
-                        {/* Product name + category */}
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-slate-700 truncate font-body group-hover:text-brand-600 transition-colors duration-150">
-                                {item?.name ?? "Unknown Product"}
-                            </p>
-                            <p className="text-[10px] text-slate-400 font-body">{item?.category ?? "Uncategorized"}</p>
-                        </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-slate-700 truncate font-body group-hover:text-brand-600 transition-colors duration-150">
+                                    {item?.productName ?? "Unknown Product"}
+                                </p>
+                                <p className="text-[10px] text-slate-400 font-body">Sales volume</p>
+                            </div>
 
-                        {/* Trend */}
-                        <i className={`flex-shrink-0 text-xs leading-none ${
-                            item?.trend === "up"
-                                ? "fi fi-rr-arrow-trend-up text-emerald-500"
-                                : "fi fi-rr-arrow-trend-down text-red-400"
-                        }`} />
-
-                        {/* Sold */}
-                        <div className="text-right flex-shrink-0">
-                            <p className="text-xs font-bold font-heading text-slate-700">{item.sold}</p>
-                            <p className="text-[10px] text-slate-400 font-body">sold</p>
-                        </div>
-
-                        {/* Revenue pill */}
-                        <span className="flex-shrink-0 text-[10px] font-semibold bg-brand-50 text-brand-600 px-2 py-1 rounded-lg font-heading">
-                            ${((item?.revenue ?? 0) / 1000).toFixed(0)}k
-                        </span>
-                    </li>
-                ))}
-            </ul>
+                            <div className="text-right flex-shrink-0">
+                                <p className="text-xs font-bold font-heading text-slate-700">
+                                    {Number(item?.salesVolume ?? 0).toLocaleString("vi-VN")}
+                                </p>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            )}
         </div>
     );
 }

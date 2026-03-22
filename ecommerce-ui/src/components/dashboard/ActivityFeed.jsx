@@ -7,9 +7,15 @@ const TYPE_ICON = {
 };
 
 function getRelativeTime(isoValue) {
-    if (!isoValue) return "Just now";
-    const created = new Date(isoValue).getTime();
-    if (Number.isNaN(created)) return "Just now";
+    if (!isoValue) return "Recently";
+
+    const parsed = new Date(isoValue);
+    const created = parsed.getTime();
+    if (Number.isNaN(created)) return "Recently";
+
+    const year = parsed.getFullYear();
+    if (year < 2000) return "Recently";
+    if (created > Date.now()) return "Recently";
 
     const diffSeconds = Math.max(0, Math.floor((Date.now() - created) / 1000));
     if (diffSeconds < 60) return "Just now";

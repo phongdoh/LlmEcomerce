@@ -7,7 +7,7 @@ const CustomTooltip = ({ active, payload }) => {
     return (
         <div className="bg-slate-900 rounded-xl p-3 shadow-xl border border-slate-800">
             <p className="text-xs font-bold text-white font-heading">{d.name}</p>
-            <p className="text-xs text-slate-300 font-body">${d.amount?.toLocaleString()}</p>
+            <p className="text-xs text-slate-300 font-body">{Number(d.amount ?? 0).toLocaleString("vi-VN")} ₫</p>
             <p className="text-xs text-slate-400 font-body">{d.value}% of revenue</p>
         </div>
     );
@@ -34,31 +34,35 @@ function RevenueByCategory({ data = [] }) {
                 <h3 className="text-sm font-semibold font-heading text-slate-800">Revenue by Category</h3>
                 <p className="text-xs text-slate-400 font-body mt-0.5">Distribution this period</p>
             </div>
-            <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                    <Pie
-                        data={list}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={renderLabel}
-                        outerRadius={85}
-                        innerRadius={42}
-                        dataKey="value"
-                        strokeWidth={2}
-                        stroke="#fff"
-                    >
-                        {list.map((entry, i) => (
-                            <Cell key={`cell-${i}`} fill={entry.color} />
-                        ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend
-                        wrapperStyle={{ fontSize: 11, fontFamily: "'Fira Sans', sans-serif" }}
-                        formatter={(v) => <span className="text-slate-600">{v}</span>}
-                    />
-                </PieChart>
-            </ResponsiveContainer>
+            {list.length === 0 ? (
+                <p className="text-xs text-slate-400 font-body">No data yet</p>
+            ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                        <Pie
+                            data={list}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={renderLabel}
+                            outerRadius={85}
+                            innerRadius={42}
+                            dataKey="value"
+                            strokeWidth={2}
+                            stroke="#fff"
+                        >
+                            {list.map((entry, i) => (
+                                <Cell key={`cell-${i}`} fill={entry.color} />
+                            ))}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend
+                            wrapperStyle={{ fontSize: 11, fontFamily: "'Fira Sans', sans-serif" }}
+                            formatter={(v) => <span className="text-slate-600">{v}</span>}
+                        />
+                    </PieChart>
+                </ResponsiveContainer>
+            )}
 
             {/* Category list */}
             <ul className="mt-2 space-y-1.5">
@@ -69,7 +73,7 @@ function RevenueByCategory({ data = [] }) {
                             <span className="text-xs text-slate-600 font-body">{d.name}</span>
                         </div>
                         <span className="text-xs font-semibold text-slate-700 font-heading">
-                            ${(d.amount / 1000).toFixed(0)}k
+                            {Number(d.amount ?? 0).toLocaleString("vi-VN")} ₫
                         </span>
                     </li>
                 ))}

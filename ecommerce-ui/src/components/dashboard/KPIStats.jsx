@@ -1,26 +1,30 @@
 // No mock data — data is passed entirely as a prop from DashboardPage
 
+const formatVnd = (value) => {
+    const amount = Number(value ?? 0);
+    return `${amount.toLocaleString("vi-VN")} ₫`;
+};
+
 const cards = [
     {
         label: "Total Revenue",
         key: "totalRevenue",
-        growthKey: "revenueGrowth",
+        growthKey: "revenueGrowthRate",
         icon: "fi fi-rr-sack-dollar",
         accent: "border-l-brand-600",
         iconBg: "bg-brand-50",
         iconColor: "text-brand-600",
-        format: (v) =>
-            "$" + Number(v).toLocaleString("en-US", { notation: "compact", maximumFractionDigits: 1 }),
+        format: (v) => formatVnd(v),
     },
     {
         label: "Orders Today",
         key: "ordersToday",
-        growthKey: "ordersGrowth",
+        growthKey: "ordersTodayGrowth",
         icon: "fi fi-rr-shopping-cart",
         accent: "border-l-orange-500",
         iconBg: "bg-orange-50",
         iconColor: "text-orange-500",
-        format: (v) => Number(v).toLocaleString("en-US"),
+        format: (v) => Number(v).toLocaleString("vi-VN"),
     },
     {
         label: "Total Products",
@@ -30,18 +34,17 @@ const cards = [
         accent: "border-l-emerald-500",
         iconBg: "bg-emerald-50",
         iconColor: "text-emerald-600",
-        format: (v) => Number(v).toLocaleString("en-US"),
+        format: (v) => Number(v).toLocaleString("vi-VN"),
     },
     {
         label: "Total Users",
         key: "totalUsers",
-        growthKey: "usersGrowth",
+        growthKey: "usersGrowthRate",
         icon: "fi fi-rr-users",
         accent: "border-l-violet-500",
         iconBg: "bg-violet-50",
         iconColor: "text-violet-600",
-        format: (v) =>
-            Number(v).toLocaleString("en-US", { notation: "compact", maximumFractionDigits: 1 }),
+        format: (v) => Number(v).toLocaleString("vi-VN"),
     },
 ];
 
@@ -51,7 +54,14 @@ function KPIStats({ data = null }) {
             {cards.map((card, i) => {
                 const value = data[card.key];
                 const growth = data[card.growthKey];
-                const positive = growth >= 0;
+                const numericGrowth = Number(growth ?? 0);
+                const hasNoData = Number(value ?? 0) === 0 && numericGrowth === 0;
+                const positive = growth === "New" || numericGrowth > 0;
+                const trendText = hasNoData
+                    ? "No data yet"
+                    : growth === "New"
+                        ? "New"
+                        : `${positive ? "+" : ""}${numericGrowth}% vs last month`;
 
                 return (
                     <div
@@ -67,9 +77,11 @@ function KPIStats({ data = null }) {
                                 <p className="text-2xl font-bold font-heading text-slate-800 leading-none">
                                     {value != null ? card.format(value) : "—"}
                                 </p>
-                                <div className={`flex items-center gap-1 mt-2 text-xs font-medium font-body ${positive ? "text-emerald-600" : "text-red-500"}`}>
-                                    <i className={`${positive ? "fi fi-rr-arrow-trend-up" : "fi fi-rr-arrow-trend-down"} text-xs leading-none`} />
-                                    <span>{positive ? "+" : ""}{growth}% vs last month</span>
+                                <div className={`flex items-center gap-1 mt-2 text-xs font-medium font-body ${hasNoData ? "text-slate-400" : positive ? "text-emerald-600" : "text-red-500"}`}>
+                                    {!hasNoData && (
+                                        <i className={`${positive ? "fi fi-rr-arrow-trend-up" : "fi fi-rr-arrow-trend-down"} text-xs leading-none`} />
+                                    )}
+                                    <span>{trendText}</span>
                                 </div>
                             </div>
                             <div className={`p-3 rounded-xl ${card.iconBg} flex-shrink-0`}>
